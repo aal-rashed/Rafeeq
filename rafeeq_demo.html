@@ -1,0 +1,398 @@
+<!-- demo (if/else version) -->
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--teal:#1D9E75;--teal-light:#E1F5EE;--teal-dark:#0F6E56;--navy:#0D1B3E;--gold:#BA7517;--gold-bg:#FAEEDA}
+
+.phone-frame{background:var(--color-background-secondary);border-radius:var(--border-radius-lg);padding:16px;display:flex;justify-content:center}
+.phone{width:340px;background:var(--color-background-primary);border:.5px solid var(--color-border-tertiary);border-radius:24px;overflow:hidden;display:flex;flex-direction:column}
+
+.chat-header{background:var(--navy);padding:14px 16px;display:flex;align-items:center;gap:10px}
+.agent-avatar{width:36px;height:36px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.agent-avatar i{color:#fff;font-size:18px}
+.agent-info{flex:1}
+.agent-name{font-size:14px;font-weight:500;color:#fff}
+.agent-status{font-size:11px;color:rgba(255,255,255,.6);display:flex;align-items:center;gap:4px}
+.status-dot{width:6px;height:6px;border-radius:50%;background:var(--teal)}
+
+.chat-messages{flex:1;padding:14px 12px;display:flex;flex-direction:column;gap:10px;min-height:360px;max-height:420px;overflow-y:auto}
+
+.msg-row{display:flex;align-items:flex-end;gap:7px}
+.msg-row.user{flex-direction:row-reverse}
+
+.bubble{max-width:220px;padding:9px 12px;border-radius:16px;font-size:13px;line-height:1.5;color:var(--color-text-primary)}
+.bubble.agent{background:var(--color-background-secondary);border:.5px solid var(--color-border-tertiary);border-bottom-left-radius:4px}
+.bubble.user{background:var(--teal);color:#fff;border-bottom-right-radius:4px}
+.bubble.user *{color:#fff}
+
+.mini-avatar{width:26px;height:26px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500}
+.mini-avatar.agent{background:var(--teal);color:#fff}
+.mini-avatar.user{background:#E6F1FB;color:#185FA5}
+
+.typing-indicator{display:flex;gap:4px;align-items:center;padding:10px 12px}
+.typing-indicator span{width:7px;height:7px;border-radius:50%;background:var(--color-border-secondary);animation:typing .9s ease-in-out infinite}
+.typing-indicator span:nth-child(2){animation-delay:.2s}
+.typing-indicator span:nth-child(3){animation-delay:.4s}
+@keyframes typing{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}}
+
+.quick-replies{padding:10px 12px;display:flex;flex-wrap:wrap;gap:6px;border-top:.5px solid var(--color-border-tertiary)}
+.qr-btn{font-size:12px;padding:6px 12px;border-radius:20px;border:.5px solid var(--teal);background:var(--teal-light);color:var(--teal-dark);cursor:pointer;transition:.15s;font-family:inherit;white-space:nowrap}
+.qr-btn:hover{background:var(--teal);color:#fff}
+
+.chat-input-row{padding:10px 12px;border-top:.5px solid var(--color-border-tertiary);display:flex;gap:8px;align-items:center}
+.chat-input-row input{flex:1;border:.5px solid var(--color-border-tertiary);border-radius:20px;padding:8px 14px;font-size:13px;font-family:inherit;background:var(--color-background-secondary);color:var(--color-text-primary)}
+.send-btn{width:34px;height:34px;border-radius:50%;background:var(--teal);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.send-btn i{color:#fff;font-size:16px}
+
+.result-card{background:var(--color-background-primary);border:.5px solid var(--teal);border-radius:12px;padding:10px 12px;margin-top:4px;max-width:220px}
+.result-title{font-size:13px;font-weight:500;color:var(--color-text-primary);margin-bottom:4px}
+.result-tag{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:2px 8px;border-radius:10px;background:var(--teal-light);color:var(--teal-dark);margin:2px 2px 0 0}
+.match-bar{height:4px;border-radius:2px;background:var(--color-border-tertiary);margin-top:8px}
+.match-fill{height:100%;border-radius:2px;background:var(--teal);transition:width 1s ease}
+.match-label{font-size:10px;color:var(--teal-dark);margin-top:3px;font-weight:500}
+
+.reset-btn{margin:12px 16px 0;font-size:12px;color:var(--color-text-secondary);background:none;border:.5px solid var(--color-border-tertiary);border-radius:8px;padding:6px 12px;cursor:pointer;font-family:inherit;width:calc(100% - 32px)}
+.reset-btn:hover{background:var(--color-background-secondary)}
+</style>
+
+<h2 style="position:absolute;left:-9999px">Rafeeq — Hawi AI hobby recommendation agent</h2>
+
+<div class="phone-frame">
+<div class="phone">
+
+  <div class="chat-header">
+    <div class="agent-avatar"><i class="ti ti-robot" aria-hidden="true"></i></div>
+    <div class="agent-info">
+      <div class="agent-name">رفيق | Rafeeq</div>
+      <div class="agent-status"><div class="status-dot"></div> مساعدك الذكي في هاوي</div>
+    </div>
+    <i class="ti ti-dots-vertical" style="color:rgba(255,255,255,.5);font-size:18px" aria-hidden="true"></i>
+  </div>
+
+  <div class="chat-messages" id="messages"></div>
+  <div class="quick-replies" id="quick-replies"></div>
+
+  <div class="chat-input-row">
+    <input type="text" id="user-input" placeholder="اكتب هنا..." onkeydown="if(event.key==='Enter')sendUserText()">
+    <button class="send-btn" onclick="sendUserText()" aria-label="إرسال"><i class="ti ti-send" aria-hidden="true"></i></button>
+  </div>
+
+</div>
+</div>
+
+<button class="reset-btn" onclick="resetChat()"><i class="ti ti-refresh" style="font-size:13px;vertical-align:-1px" aria-hidden="true"></i> بدء محادثة جديدة مع رفيق</button>
+
+<script>
+const DB = {
+  riyadh:{
+    outdoor:{
+      morning:[
+        {name:"رحلة مشي جبلي — وادي حنيفة",tags:["في الهواء الطلق","صباحي","مغامرة"],match:95,desc:"كل جمعة ٦ ص"},
+        {name:"نادي ركوب الدراجات",tags:["رياضي","صباحي","اجتماعي"],match:88,desc:"ثلاثة أيام أسبوعياً"}
+      ],
+      evening:[
+        {name:"نادي التصوير الفوتوغرافي",tags:["إبداعي","مسائي","فردي"],match:91,desc:"الثلاثاء والخميس ٧ م"},
+        {name:"فلكيو الرياض — رصد النجوم",tags:["علمي","مسائي","هادئ"],match:87,desc:"أول جمعة كل شهر"}
+      ],
+      weekend:[
+        {name:"ورشة التخييم والبقاء",tags:["مغامرة","عطلة","تعلم"],match:93,desc:"نهاية الأسبوع شهرياً"},
+        {name:"نادي الرحالة السعوديين",tags:["سفر","عطلة","اجتماعي"],match:89,desc:"رحلة شهرية منظمة"}
+      ]
+    },
+    indoor:{
+      morning:[
+        {name:"نادي الشطرنج — الرياض",tags:["ذهني","صباحي","تنافسي"],match:90,desc:"يومياً ٩ ص–١٢ م"},
+        {name:"ورشة الرسم والفنون",tags:["إبداعي","صباحي","هادئ"],match:84,desc:"السبت والأحد ١٠ ص"}
+      ],
+      evening:[
+        {name:"نادي القراءة الشهري",tags:["ثقافي","مسائي","هادئ"],match:86,desc:"الاثنين ٨ م"},
+        {name:"دروس الموسيقى — العود",tags:["فني","مسائي","إبداعي"],match:82,desc:"يومياً بالحجز"}
+      ],
+      weekend:[
+        {name:"ورشة الطبخ السعودي",tags:["عملي","عطلة","اجتماعي"],match:88,desc:"الجمعة ٣ م"},
+        {name:"صناعة الفخار — نادي الحرف",tags:["يدوي","عطلة","إبداعي"],match:80,desc:"السبت ٢–٥ م"}
+      ]
+    }
+  },
+  jeddah:{
+    outdoor:{
+      morning:[
+        {name:"نادي الغوص — كورنيش جدة",tags:["مائي","صباحي","مغامرة"],match:96,desc:"السبت والأحد ٧ ص"},
+        {name:"تزلج على الأمواج — البحر الأحمر",tags:["رياضي","صباحي","مغامرة"],match:91,desc:"يومياً بالحجز"}
+      ],
+      evening:[
+        {name:"صيد السمك — الكورنيش",tags:["هادئ","مسائي","طبيعي"],match:88,desc:"كل مساء ٥–٩ م"},
+        {name:"نزهة الدراجات الهوائية",tags:["رياضي","مسائي","اجتماعي"],match:84,desc:"الثلاثاء والخميس"}
+      ],
+      weekend:[
+        {name:"رحلة الشعاب المرجانية",tags:["مغامرة","عطلة","طبيعي"],match:94,desc:"الجمعة والسبت"},
+        {name:"كايت سيرفينج — شاطئ الأوبرا",tags:["رياضي","عطلة","مغامرة"],match:89,desc:"نهاية الأسبوع"}
+      ]
+    },
+    indoor:{
+      morning:[
+        {name:"صناعة العطور العربية",tags:["إبداعي","صباحي","ثقافي"],match:92,desc:"الأحد والاثنين ١٠ ص"},
+        {name:"ورشة الخط العربي",tags:["فني","صباحي","هادئ"],match:85,desc:"السبت والاثنين ٩ ص"}
+      ],
+      evening:[
+        {name:"نادي الطبخ العالمي",tags:["عملي","مسائي","اجتماعي"],match:90,desc:"الأربعاء ٧ م"},
+        {name:"مسرح الهواة — التمثيل",tags:["إبداعي","مسائي","اجتماعي"],match:83,desc:"الثلاثاء والخميس ٧ م"}
+      ],
+      weekend:[
+        {name:"ورشة السيراميك",tags:["يدوي","عطلة","إبداعي"],match:87,desc:"الجمعة ٢ م"},
+        {name:"دروس اللغات — الإسبانية",tags:["تعليمي","عطلة","ثقافي"],match:79,desc:"السبت ١٠ ص"}
+      ]
+    }
+  },
+  dammam:{
+    outdoor:{
+      morning:[
+        {name:"نادي رياضات الرمال",tags:["مغامرة","صباحي","رياضي"],match:93,desc:"الجمعة ٦ ص"},
+        {name:"ركوب الخيل — نادي الفروسية",tags:["تقليدي","صباحي","رياضي"],match:90,desc:"يومياً ٧–١٠ ص"}
+      ],
+      evening:[
+        {name:"نادي أصدقاء البيئة",tags:["طبيعي","مسائي","تطوعي"],match:85,desc:"الاثنين ٦ م"},
+        {name:"صيد السمك — الجسر",tags:["هادئ","مسائي","طبيعي"],match:82,desc:"يومياً ٤–٨ م"}
+      ],
+      weekend:[
+        {name:"رحلات الصحراء — الأحساء",tags:["مغامرة","عطلة","ثقافي"],match:95,desc:"شهرياً نهاية الأسبوع"},
+        {name:"كرة القدم الشاطئية",tags:["رياضي","عطلة","اجتماعي"],match:86,desc:"كل جمعة ٤ م"}
+      ]
+    },
+    indoor:{
+      morning:[
+        {name:"ورشة البرمجة — كودرز",tags:["تقني","صباحي","تعليمي"],match:91,desc:"الأحد والثلاثاء ٩ ص"},
+        {name:"نادي الروبوتيك",tags:["تقني","صباحي","إبداعي"],match:88,desc:"السبت ١٠ ص"}
+      ],
+      evening:[
+        {name:"مجموعة الرسم الرقمي",tags:["إبداعي","مسائي","تقني"],match:87,desc:"الأربعاء والخميس ٧ م"},
+        {name:"نادي الشعر العربي",tags:["ثقافي","مسائي","أدبي"],match:81,desc:"الثلاثاء ٨ م"}
+      ],
+      weekend:[
+        {name:"ورشة الذكاء الاصطناعي",tags:["تقني","عطلة","تعليمي"],match:93,desc:"الجمعة ٣ م"},
+        {name:"صناعة الأثاث اليدوي",tags:["يدوي","عطلة","إبداعي"],match:84,desc:"السبت ١٠ ص–٢ م"}
+      ]
+    }
+  }
+};
+
+const STEPS=[
+  {id:'welcome',msg:'مرحباً! أنا رفيق 👋\nمساعدك الذكي في منصة هاوي.\n\nسأساعدك تكتشف الهواية المثالية لك في 3 أسئلة فقط. هل أنت مستعد؟',replies:['نعم، ابدأ!','ما هي هاوي؟']},
+  {id:'location',msg:'ممتاز! السؤال الأول:\n\nما مدينتك؟',replies:['الرياض','جدة','الدمام','مدينة أخرى']},
+  {id:'vibe',msg:'السؤال الثاني:\n\nهل تفضل الأنشطة في الهواء الطلق أم داخل المبنى؟',replies:['في الهواء الطلق 🌿','داخل المبنى 🏠','لا فرق عندي']},
+  {id:'time',msg:'السؤال الأخير:\n\nمتى تكون حر عادةً؟',replies:['الصباح ☀️','المساء 🌙','نهاية الأسبوع 🗓️']}
+];
+
+let state={step:0,location:'',vibe:'',time:''};
+
+function getMessages(){return document.getElementById('messages')}
+function getQR(){return document.getElementById('quick-replies')}
+
+function addBubble(text,who,delay=0){
+  return new Promise(res=>{
+    setTimeout(()=>{
+      const row=document.createElement('div');
+      row.className='msg-row '+(who==='user'?'user':'');
+      const av=document.createElement('div');
+      av.className='mini-avatar '+(who==='user'?'user':'agent');
+      av.innerHTML=who==='user'?'أ':'<i class="ti ti-robot" aria-hidden="true"></i>';
+      const bub=document.createElement('div');
+      bub.className='bubble '+who;
+      bub.innerHTML=text.replace(/\n/g,'<br>');
+      if(who==='user'){row.appendChild(bub);row.appendChild(av);}
+      else{row.appendChild(av);row.appendChild(bub);}
+      getMessages().appendChild(row);
+      scrollBottom();
+      res();
+    },delay);
+  });
+}
+
+function addTyping(){
+  const row=document.createElement('div');
+  row.className='msg-row';row.id='typing';
+  const av=document.createElement('div');
+  av.className='mini-avatar agent';
+  av.innerHTML='<i class="ti ti-robot" aria-hidden="true"></i>';
+  const bub=document.createElement('div');
+  bub.className='bubble agent';
+  bub.innerHTML='<div class="typing-indicator"><span></span><span></span><span></span></div>';
+  row.appendChild(av);row.appendChild(bub);
+  getMessages().appendChild(row);
+  scrollBottom();
+}
+
+function removeTyping(){const t=document.getElementById('typing');if(t)t.remove();}
+function setReplies(replies){
+  const qr=getQR();qr.innerHTML='';
+  replies.forEach(r=>{
+    const btn=document.createElement('button');
+    btn.className='qr-btn';btn.textContent=r;
+    btn.onclick=()=>handleReply(r);
+    qr.appendChild(btn);
+  });
+}
+function clearReplies(){getQR().innerHTML='';}
+function scrollBottom(){const m=getMessages();m.scrollTop=m.scrollHeight;}
+
+function handleReply(text){clearReplies();addBubble(text,'user');processStep(text);}
+
+function sendUserText(){
+  const inp=document.getElementById('user-input');
+  const val=inp.value.trim();if(!val)return;
+  inp.value='';clearReplies();addBubble(val,'user');processStep(val);
+}
+
+function processStep(input){
+  const lower=input.toLowerCase();
+
+  if(state.step===0){
+    if(lower.includes('هاوي') || lower.includes('ما هي')){
+      addTyping();
+      setTimeout(()=>{
+        removeTyping();
+        addBubble('هاوي هي البوابة الوطنية للهوايات في المملكة 🇸🇦\n\nتربطك بأندية وفعاليات قريبة تناسب اهتماماتك، وأنا رفيق هنا لأساعدك تلاقي المناسب!','agent');
+        setTimeout(()=>setReplies(['رائع، ابدأ معي!']),600);
+      },1000);
+    } else {
+      state.step=1;nextStep();
+    }
+    return;
+  }
+
+  if(state.step===1){
+    if(lower.includes('رياض')) state.location='riyadh';
+    else if(lower.includes('جد')) state.location='jeddah';
+    else if(lower.includes('دمام')) state.location='dammam';
+    else{
+      state.location='riyadh';
+      addTyping();
+      setTimeout(()=>{
+        removeTyping();
+        addBubble('ما وصلنا لمدينتك بعد، لكن سأستخدم الرياض مؤقتاً!','agent');
+        setTimeout(()=>{state.step=2;nextStep();},500);
+      },900);
+      return;
+    }
+    state.step=2;nextStep();return;
+  }
+
+  if(state.step===2){
+    if(lower.includes('هواء') || lower.includes('طلق') || lower.includes('خارج')) state.vibe='outdoor';
+    else if(lower.includes('داخل') || lower.includes('مبنى')) state.vibe='indoor';
+    else state.vibe=Math.random()>.5?'outdoor':'indoor';
+    state.step=3;nextStep();return;
+  }
+
+  if(state.step===3){
+    if(lower.includes('صباح') || lower.includes('☀')) state.time='morning';
+    else if(lower.includes('مساء') || lower.includes('🌙')) state.time='evening';
+    else state.time='weekend';
+    state.step=4;showResults();return;
+  }
+
+  if(state.step===5){
+    if(lower.includes('سجل') || lower.includes('نعم')){
+      addTyping();
+      setTimeout(()=>{
+        removeTyping();
+        addBubble('ممتاز! تم تحويلك لصفحة التسجيل في منصة هاوي 🎉\nأتمنى لك تجربة رائعة!','agent');
+        setTimeout(()=>setReplies(['ابدأ بحثاً جديداً']),500);
+      },900);
+    } else if(lower.includes('مزيد') || lower.includes('أكثر')){
+      addTyping();
+      setTimeout(()=>{
+        removeTyping();
+        addBubble('حسناً! دعنا نعيد البحث بمعايير مختلفة 🔍','agent');
+        setTimeout(()=>{state.step=1;nextStep();state.location='';state.vibe='';state.time='';},500);
+      },900);
+    } else {
+      state.step=0;resetChat();
+    }
+    return;
+  }
+
+  addTyping();
+  setTimeout(()=>{removeTyping();addBubble('هل تريد تجربة بحث جديد مع رفيق؟','agent');setTimeout(()=>setReplies(['نعم، ابدأ من جديد']),400);},800);
+}
+
+function nextStep(){
+  const s=STEPS[state.step];
+  addTyping();
+  setTimeout(()=>{
+    removeTyping();
+    addBubble(s.msg,'agent');
+    setTimeout(()=>setReplies(s.replies),400);
+  },900);
+}
+
+function showResults(){
+  addTyping();
+  setTimeout(()=>{
+    removeTyping();
+    const loc=state.location||'riyadh';
+    const vibe=state.vibe||'outdoor';
+    const time=state.time||'morning';
+    const results=DB[loc]?.[vibe]?.[time]||DB.riyadh.outdoor.morning;
+    const top2=results.slice(0,2);
+
+    const cityName=loc==='riyadh'?'الرياض':loc==='jeddah'?'جدة':'الدمام';
+    const vibeName=vibe==='outdoor'?'في الهواء الطلق':'داخل المبنى';
+    const timeName=time==='morning'?'الصباح':time==='evening'?'المساء':'نهاية الأسبوع';
+
+    addBubble('فاهمك! 🤩\nبناءً على:\n📍 '+cityName+'  ·  🏷 '+vibeName+'  ·  ⏰ '+timeName+'\n\nجبت لك أفضل خيارين يناسبونك:','agent');
+
+    setTimeout(()=>{
+      top2.forEach((r,i)=>{
+        setTimeout(()=>{
+          const row=document.createElement('div');
+          row.className='msg-row';
+          const av=document.createElement('div');
+          av.className='mini-avatar agent';
+          av.innerHTML='<i class="ti ti-robot" aria-hidden="true"></i>';
+          const card=document.createElement('div');
+          card.className='result-card';
+          const tagsHTML=r.tags.map(t=>`<span class="result-tag">${t}</span>`).join('');
+          card.innerHTML=`
+            <div class="result-title">${r.name}</div>
+            <div style="font-size:11px;color:var(--color-text-secondary);margin-bottom:6px">${r.desc}</div>
+            <div>${tagsHTML}</div>
+            <div class="match-bar"><div class="match-fill" style="width:0%" id="fill-${i}"></div></div>
+            <div class="match-label">${r.match}% تطابق مع اهتماماتك</div>
+          `;
+          row.appendChild(av);row.appendChild(card);
+          getMessages().appendChild(row);
+          scrollBottom();
+          setTimeout(()=>{document.getElementById('fill-'+i).style.width=r.match+'%';},300);
+        },i*600);
+      });
+
+      setTimeout(()=>{
+        addBubble('هل تريد التسجيل في إحدى هذه الفعاليات؟ 😊','agent');
+        setReplies(['نعم، سجّلني!','أرني خيارات أخرى','ابدأ بحثاً جديداً']);
+        state.step=5;
+      },top2.length*600+800);
+    },700);
+  },1200);
+}
+
+function resetChat(){
+  state={step:0,location:'',vibe:'',time:''};
+  getMessages().innerHTML='';
+  clearReplies();
+  startChat();
+}
+
+function startChat(){
+  setTimeout(()=>{
+    addTyping();
+    setTimeout(()=>{
+      removeTyping();
+      addBubble(STEPS[0].msg,'agent');
+      setTimeout(()=>setReplies(STEPS[0].replies),500);
+    },800);
+  },300);
+}
+
+if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',startChat);}
+else{startChat();}
+</script>
